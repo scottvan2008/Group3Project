@@ -1,0 +1,159 @@
+﻿@page "/explore"
+@* @using library.Data *@
+@using Microsoft.Data.SqlClient
+
+
+
+<div class="explore-heading-container">
+    <h3>Explore Books</h3>
+</div>
+
+<div class="container explore-container">
+    <div class="row">
+        @foreach (var book in books)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card book-card" style="border-color: @(GetBorderColor(book.Genre)); background-color: @(GetCardBackgroundColor(book.Genre));">
+                    <img class="card-img-top book-thumbnail" src="thumbnailimages/@(book.Genre.Replace(" ", "_")).jpg" alt="Thumbnail for @book.Genre">
+                    <div class="card-body book-card-body">
+                        <h5 class="card-title">@book.Name</h5>
+                        <p class="card-text"> @(book.Availability ? "Available" : "Not Available")</p>
+                        <button class="btn btn-primary" @onclick="() => ShowDetails(book)">More Info</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (showModal)
+{
+    <div class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">@selectedBook.Name</h4>
+                    <span class="close" @onclick="HideDetails">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>Author: @selectedBook.Author</p>
+                    <p>Genre: @selectedBook.Genre</p>
+                    <p>ISBN: @selectedBook.Isbn</p>
+                    <p>Quantity: @selectedBook.Quantity</p>
+                    <p>Availability: @(selectedBook.Availability ? "Available" : "Not Available")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public List<Book> books = new List<Book>();
+    private Book selectedBook;
+    private bool showModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBooks();
+    }
+
+    /*
+    Name: LoadBooks
+    Description: This function connects to a SQL Server database, retrieves all records from the "book" table,
+    and populates a list of books. It uses a connection string for the local database and executes a SQL query
+    to fetch the book details.
+    The results are read  and added to the 'books' list.
+    */
+    private async Task LoadBooks()
+    {
+        string connectBook = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        try
+        {
+            using (SqlConnection connect = new SqlConnection(connectBook))
+            {
+                await connect.OpenAsync();
+                SqlCommand cmd = new SqlCommand("SELECT * FROM Library_books", connect);
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    books.Add(new Book
+                        (
+                            reader["isbn"].ToString(),
+                            reader["book_name"].ToString(),
+                            reader["author_name"].ToString(),
+                            reader["genre"].ToString(),
+                            Convert.ToInt32(reader["availability"]),
+                            Convert.ToInt32(reader["quantity"])
+
+                        ));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+    /*
+    Name: ShowDetails
+    Description:This function sets the 'selectedBook' to the specified 'book' and displays a modal with the book's details
+    by setting the 'showModal' flag to 'true'.
+    */
+    private void ShowDetails(Book book)
+    {
+        selectedBook = book;
+        showModal = true;
+    }
+
+    /*
+    Name: HideDetails
+    Description:
+    This function hides the modal by setting the 'showModal' flag to 'false'.
+    */
+    private void HideDetails()
+    {
+        showModal = false;
+    }
+
+    /*
+    Name: GetBorderColor
+    Description: This function returns the border color associated with a given book genre.
+    If the genre does not match any of the predefined genres, it returns a default color ('#CCCCCC').
+    */
+    private string GetBorderColor(string genre)
+    {
+        return genre switch
+        {
+            "Fiction" => "#76D084",
+            "Romance" => "#FBB5B7",
+            "Mystery" => "#925CB4",
+            "Fantasy" => "#8E7F92",
+            "Adventure" => "#1B4D5C",
+            "Dystopian" => "#CE886B",
+            "Historical Fiction" => "#76D084",
+            _ => "#CCCCCC"
+        };
+    }
+
+
+    /*
+    Name: GetCardBackgroundColor
+    Description: This function returns the card background color associated with a given book genre.
+    If the genre does not match any of the predefined genres, it returns a default color ('#CCCCCC').
+    */
+    private string GetCardBackgroundColor(string genre)
+    {
+        return genre switch
+        {
+            "Fiction" => "#E0F2E9",
+            "Romance" => "#FEE2E3",
+            "Mystery" => "#EDE0F4",
+            "Fantasy" => "#F0EEF2",
+            "Adventure" => "#E0EEF5",
+            "Dystopian" => "#F5E9E3",
+            "Historical Fiction" => "#E0F2E9",
+            _ => "#FFFFFF"
+        };
+    }
+}

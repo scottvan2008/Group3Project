@@ -1,0 +1,149 @@
+﻿.explore-heading-container {
+    padding: 20px;
+    text-align: center;
+    background-color: #F5F5F5;
+    border-bottom: 2px solid #CCCCCC;
+    margin-bottom: 20px;
+}
+
+h3 {
+    margin: 0;
+    font-size: 2em;
+    color: #333;
+}
+
+.explore-container {
+    background: linear-gradient(135deg, #E0E0E0 25%, #F5F5F5 75%);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.book-thumbnail {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    border-bottom: 2px solid;
+}
+
+.card {
+    height: 100%;
+    transition: transform 0.2s;
+}
+
+.book-card {
+    border: 2px solid;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+    .book-card:hover {
+        transform: scale(1.05);
+    }
+
+.book-card-body {
+    padding: 10px;
+    border-top: 2px solid;
+    text-align: center;
+    color: #333;
+}
+
+.card-title {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.card-text {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+
+.btn-primary {
+    background: linear-gradient(135deg, #6E7DFF, #3E4EB8);
+    border: none;
+    border-radius: 8px;
+    color: #FFF;
+    padding: 10px 20px;
+    font-size: 1em;
+    transition: background 0.3s, transform 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-top: auto;
+    align-self: center;
+}
+
+    .btn-primary:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+/* Updated modal styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    position: relative;
+    max-width: 600px;
+}
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+    .modal-header .close {
+        font-size: 1.5em;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+.modal-body {
+    font-size: 1.1em;
+    color: #333;
+}
+
+/* New styles for modal footer button */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+    .modal-footer button {
+        background: linear-gradient(135deg, #6E7DFF, #3E4EB8);
+        border: none;
+        border-radius: 8px;
+        color: #FFF;
+        padding: 10px 20px;
+        font-size: 1em;
+        transition: background 0.3s, transform 0.2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+        .modal-footer button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }

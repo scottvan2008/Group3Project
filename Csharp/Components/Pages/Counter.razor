@@ -1,0 +1,371 @@
+﻿
+
+
+@page "/counter"
+@using Blazorise;
+@using Microsoft.Data.SqlClient;
+
+@* a liitle animation for the titale of sliding from top to bottom *@
+<h1 class="text-center custom-animate">For Regular Users Only</h1>
+<br>
+<br>
+
+@* the card component for searching module including a tab component inside, thanks to Harinder's help,i can't make it happen without it*@
+
+<div class="card mb-3">
+    <div class="card-header">
+        First, Let Us Find A Book:
+    </div>
+    <div class="card-body">
+        <Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+            <Items>
+                @* name for every tab *@
+
+                <Tab Name="By Name">By Name</Tab>
+                <Tab Name="By Author">By Author</Tab>
+                <Tab Name="By Genre">By Genre</Tab>
+                <Tab Name="By ISBN">By ISBN</Tab>
+
+            </Items>
+            <Content>
+                @* content for every tab panel *@
+                <TabPanel Name="By Name">
+                    <div class="mb-3">
+                        <br>
+                        <label for="n1" class="form-label">Book Name:</label>
+                        <input type="text" class="form-control" @bind-value="UserInputBookName" id="n1" placeholder="Full or Partial">
+                        <br>
+                        <button type="submit" class="btn btn-primary float-end" @onclick="SearchBooks">Search</button>
+                    </div>
+                </TabPanel>
+                <TabPanel Name="By Author">
+                    <div class="mb-3">
+                        <br>
+                        <label for="author" class="form-label">Book Author:</label>
+                        <input type="text" class="form-control" @bind-value="UserInputAuthorName" id="author" placeholder="Full or Partial">
+                        <br>
+                        <button type="submit" class="btn btn-primary float-end" @onclick="SearchBooks">Search</button>
+                    </div>
+                </TabPanel>
+                <TabPanel Name="By Genre">
+                    <div class="mb-3">
+                        <br>
+                        @* fetch the data from database, and show them in a dropbox *@
+
+                        <label for="genre" class="form-label">Book Genre:</label>
+                        <select class="form-select" @bind="UserInputGenre">
+                            <option value="ALL">ALL</option>
+                            @if (genreList != null)
+                            {
+                                @foreach (var genre in genreList)
+                                {
+                                    <option value="@genre">@genre</option>
+                                }
+                            }
+                        </select>
+                        <br>
+                        <button type="submit" class="btn btn-primary float-end" @onclick="SearchBooks">Search</button>
+                    </div>
+                </TabPanel>
+                <TabPanel Name="By ISBN">
+                    <div class="mb-3">
+                        <br>
+                        @* bind the user input isbn to a variable, and implement validation to the input *@
+
+                        <label for="isbn" class="form-label">ISBN:</label>
+                        <InputText @bind-Value="UserInputISBN" @oninput="OnInput" placeholder="123-45-67890-12-3(Full or Partial)" class="form-control mt-1" />
+                        <br>
+                        <button type="submit" class="btn btn-primary float-end" @onclick="SearchBooks">Search</button>
+                    </div>
+                </TabPanel>
+
+            </Content>
+        </Tabs>
+    </div>
+</div>
+
+
+<br>
+<br>
+
+@* make a container to show the searched result *@
+<div class="container mt-5">
+    <div class="d-flex align-items-center justify-content-between">
+        @* the header to show the summary of the result *@
+        <h5 class="mb-0 custom-title">What we have then:</h5>
+        <h5 class="mb-0 custom-title">@SearchResult.Count @bookWord</h5>
+    </div>
+
+    <div class="row mt-4">
+        @* retrieve every book from the list and show them in a fixed layout *@
+        @foreach (var result in SearchResult)
+        {
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <img src="@GetThumbnail(result.Genre)" class="card-img-top" alt="Image Alt Text">
+                    <div class="card-body">
+                        <h5 class="card-title">&laquo;@result.Name&raquo;</h5>
+                        <p class="card-text">by @result.Author</p>
+                        <br>
+                        <h5 class="card-title">
+                            @* set up an indicator to show its availability *@
+                            @if (result.Availability)
+                            {
+                                <span class="text-success border border-success p-1 rounded">Available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger border border-danger p-1 rounded">Unavailable</span>
+                            }
+                        </h5>
+                        <br>
+                        <p class="card-text">ISBN: @result.Isbn</p>
+                        <br>
+                        <div class="d-flex justify-content-center">
+                            @* the button to call borrow method *@
+                            <button class="btn btn-success me-3" @onclick="() => BorrowBook(result)">Borrow</button>
+                            @* the button to call return method *@
+                            <button class="btn btn-primary" @onclick="() => ReturnBook(result)">Return</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+
+
+@code {
+
+// the default tab
+    string selectedTab = "By Name";
+    //tab switches
+    private Task OnSelectedTabChanged(string name)
+    {
+        selectedTab = name;
+
+        return Task.CompletedTask;
+    }
+
+    //setting initial values for userinput and empty list for searching result
+
+    private string UserInputBookName="";
+    private string UserInputAuthorName="";
+    private string UserInputGenre="";
+    private string UserInputISBN="";
+    private List<Book> SearchResult = new List<Book>();
+    string bookWord = "Books";
+
+    public async void SearchBooks()
+    {
+        //connect the database and search books by book name
+        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        SqlConnection connect = new SqlConnection(connectBooks);
+        connect.Open();
+        SqlCommand cmd = new SqlCommand();
+        if(selectedTab == "By Name")
+        {
+            if(UserInputBookName == "")
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+            }
+            else
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where book_name like @BookName", connect);
+                cmd.Parameters.AddWithValue("@BookName", "%" + UserInputBookName + "%");
+            }
+
+        }
+
+        //connect the database and search books by author name
+        if (selectedTab == "By Author")
+        {
+            if (UserInputAuthorName == "")
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+            }
+            else
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where author_name like @AuthorName", connect);
+                cmd.Parameters.AddWithValue("@AuthorName", "%" + UserInputAuthorName + "%");
+            }
+
+        }
+        //connect the database and select books by genre
+        if (selectedTab == "By Genre")
+        {
+            if(UserInputGenre == "ALL")
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+            }
+            else
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where genre like @Genre", connect);
+                cmd.Parameters.AddWithValue("@Genre", "%" + UserInputGenre + "%");
+            }
+
+        }
+        //connect the database and search books by ISBN
+        if (selectedTab == "By ISBN")
+        {
+            if (UserInputISBN == "")
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+            }
+            else
+            {
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where isbn like @ISBN", connect);
+                cmd.Parameters.AddWithValue("@ISBN", "%" + UserInputISBN + "%");
+            }
+            
+        }
+        //Execute the query and read the returned data
+        SqlDataReader reader = cmd.ExecuteReader();
+        SearchResult.Clear();
+
+        //construct the object and append them to list in a loop
+        while (reader.Read())
+        {
+            Book b = new Book(reader["isbn"].ToString(), reader["book_name"].ToString(), reader["author_name"].ToString(), reader["genre"].ToString(), Convert.ToInt32(reader["availability"]), Convert.ToInt32(reader["quantity"]));
+
+            SearchResult.Add(b);
+        }
+        //if nothing found, give a message to user
+        if(SearchResult.Count == 0)
+        {
+            await Application.Current.MainPage.DisplayAlert("Sorry", "No Books Found !", "OK");
+        }
+        //according to Singular or plural result, it uses different words
+        else
+        {
+            bookWord = SearchResult.Count == 1 ? "Book" : "Books";
+            await Application.Current.MainPage.DisplayAlert("Success", $"{SearchResult.Count} {bookWord} found !", "OK");
+        }
+        reader.Close();
+    }
+    //return one book to the database and show successful message
+    public async void ReturnBook(Book b)
+    {
+        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        SqlConnection connect = new SqlConnection(connectBooks);
+        connect.Open();
+        SqlCommand cmd = new SqlCommand("update Library_books set quantity=quantity+1 where isbn = @ISBN", connect);
+        cmd.Parameters.AddWithValue("@ISBN", b.Isbn);
+        cmd.ExecuteNonQuery();
+        if(b.Quantity == 0)
+        {
+            // if it is unavailable befor, it should be available now after 1 book returned
+
+            SqlCommand cmd2 = new SqlCommand("update Library_books set availability=1 where isbn = @ISBN", connect);
+            cmd2.Parameters.AddWithValue("@ISBN", b.Isbn);
+            cmd2.ExecuteNonQuery();
+            b.Availability = true;
+
+        }
+        await Application.Current.MainPage.DisplayAlert("Success", "Book Returned Successfully", "OK");
+        //update the object's attribute as well,cause it will decide the status on the UI
+        b.Quantity++;
+    }
+    //borrow one book from the database and show successful message
+
+    public async void BorrowBook(Book b)
+    {
+        if(!b.Availability)
+        {
+            //if it is unavailable now, say sorry to the user
+
+            Application.Current.MainPage.DisplayAlert("Sorry", "This book is not available now", "OK");
+        }
+        else
+        {
+            string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+            SqlConnection connect = new SqlConnection(connectBooks);
+            connect.Open();
+            SqlCommand cmd = new SqlCommand("update Library_books set quantity=quantity-1 where isbn = @ISBN", connect);
+            cmd.Parameters.AddWithValue("@ISBN", b.Isbn);
+            cmd.ExecuteNonQuery();
+
+            //if there is only one book left in stock, change the availability in database after quantity changed
+            if (b.Quantity == 1)
+            {
+                SqlCommand cmd2 = new SqlCommand("update Library_books set availability=0 where isbn = @ISBN", connect);
+                cmd2.Parameters.AddWithValue("@ISBN", b.Isbn);
+                cmd2.ExecuteNonQuery();
+                b.Availability = false;
+            }
+            await Application.Current.MainPage.DisplayAlert("Success", "Book Borrowed Successfully", "OK");
+
+            //update the object's attribute as well,cause it will decide the status on the UI
+            b.Quantity--;
+        }
+        
+    }
+
+
+    
+
+    private string GetThumbnail(string genre)
+    {
+        // Define thumbnail based on genre
+        var thumbnails = new Dictionary<string, string>
+        {
+            { "Fiction", "/images/Fiction.png" },
+            { "Adventure", "/images/Adventure.png" },
+            { "Dystopian", "/images/Dystopian.png" },
+            { "Romance", "/images/Romance.png" },
+            { "Fantasy", "/images/Fantasy.png" },
+            { "Mystery", "/images/Mystery.png" },
+            { "Historical Fiction", "/images/Historical_Fiction.png" }
+        };
+        return thumbnails.ContainsKey(genre) ? thumbnails[genre] : "/images/No_Genre.png";
+    }
+
+    //the validation and automatic correction to the user input ISBN
+    private void OnInput(ChangeEventArgs e)
+    {
+        var rawInput = e.Value.ToString().Replace("-", "");
+        // if it is longer than 13 digits, cut it off
+        if (rawInput.Length > 13)
+        {
+            rawInput = rawInput.Substring(0, 12);
+        }
+
+        //add the "-" to the proper place according to ISBN convention automatically
+
+        if (rawInput.Length >= 3) rawInput = rawInput.Insert(3, "-");
+        if (rawInput.Length >= 6) rawInput = rawInput.Insert(6, "-");
+        if (rawInput.Length >= 12) rawInput = rawInput.Insert(12, "-");
+        if (rawInput.Length >= 15) rawInput = rawInput.Insert(15, "-");
+        UserInputISBN = rawInput;
+    }
+
+    //fecch the genre data from database when the page initiates
+
+    private List<string> genreList;
+    private string selectedGenre;
+
+    protected override async Task OnInitializedAsync()
+    {
+        genreList = getGenre();
+    }
+    // read every distinct genre
+    public static List<string> getGenre()
+    {
+        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        SqlConnection connect = new SqlConnection(connectBooks);
+        connect.Open();
+        SqlCommand cmd = new SqlCommand("select distinct genre from Library_books", connect);
+        List<string> genresList = new List<string>();
+        SqlDataReader reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+        {
+            genresList.Add(reader["genre"].ToString());
+        }
+
+        reader.Close();
+        return genresList;
+    }
+}

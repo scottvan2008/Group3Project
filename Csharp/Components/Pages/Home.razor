@@ -1,0 +1,39 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+
+
+
+
+<div class="home-container">
+    <h3>Calgary SAIT Library</h3>
+    <img src="thumbnailimages/library.png" class="library-image" alt="Library Image" />
+    <p class="welcome-message">
+        Welcome to our library app, your personalized gateway to a world of books and resources. Our app is designed to make managing and accessing library
+        materials easier and more enjoyable than ever before. Browse through our extensive collection, search for your favorite titles, and reserve books with just a few taps.
+        Stay updated with real-time availability and receive personalized recommendations based on your reading preferences. For our dedicated librarians,
+        the app streamlines catalog management, lending processes, and inventory tracking, ensuring a smooth and efficient operation. Embrace the future of reading
+        with our library app, where the joy of discovery is at your fingertips.
+    </p>
+    <h4>Get Started</h4>
+    <p class="user-admin-text">Please select your role to proceed:</p>
+    <div class="user-admin-buttons">
+        <button class="btn btn-primary" @onclick="NavigateToUser">User</button>
+        <button class="btn btn-secondary" @onclick="NavigateToAdmin">Admin</button>
+    </div>
+</div>
+
+@code {
+    /*Name: NavigateToUser
+    Description: This function navigates the user to the user page when called.*/
+    private void NavigateToUser()
+    {
+        NavigationManager.NavigateTo("/counter");
+    }
+    /*Name: NavigateToAdmin
+    Description: This function navigates the user to the admin page when called.*/
+    private void NavigateToAdmin()
+    {
+        NavigationManager.NavigateTo("/admin");
+    }
+}
+

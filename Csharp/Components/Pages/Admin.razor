@@ -1,0 +1,455 @@
+﻿@page "/admin"
+
+@inject NavigationManager NavigationManager
+@using OOP2_final_LibrarySystem.Data
+@using Microsoft.Data.SqlClient
+@using Blazorise
+
+
+@if (!isCodeVerified)
+{
+    <div class="modal show">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Admin Access</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Please enter the 4-digit code to access the admin page:</p>
+                    <input @bind="enteredCode" maxlength="4" class="form-control code-input" type="text" placeholder="Enter Code" />
+                    @if (isCodeIncorrect)
+                    {
+                        <p class="text-danger">Incorrect code. Please try again.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="VerifyCode">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+	<h3>Admin Page</h3>
+	<p>Welcome to the admin section of the library app.</p>
+	<br />
+	<h4>All Issued Books</h4>
+	<!-- Table displays all books -->
+	<div class="book-table">
+		<Table>
+			<TableHeader>
+				<TableRow>
+					<TableHeaderCell>ISBN</TableHeaderCell>
+					<TableHeaderCell>Title</TableHeaderCell>
+					<TableHeaderCell>Genre</TableHeaderCell>
+					<TableHeaderCell>Author</TableHeaderCell>
+					<TableHeaderCell>Availability</TableHeaderCell>
+					<TableHeaderCell>Quantity</TableHeaderCell>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				@if (bookList != null && bookList.Count > 0)
+				{
+					<!-- Display book details -->
+					@foreach (var book in bookList)
+					{
+						<TableRow @onclick="() => SelectedBook(book)" class="@(IsSelected(book) ? "selected-row" : "")">
+							<TableRowCell>@book.Isbn</TableRowCell>
+							<TableRowCell>@book.Name</TableRowCell>
+							<TableRowCell>@book.Genre</TableRowCell>
+							<TableRowCell>@book.Author</TableRowCell>
+							<TableRowCell>@(book.Availability ? "Available" : "Unavailable")</TableRowCell>
+							<TableRowCell>@book.Quantity</TableRowCell>
+						</TableRow>
+					}
+				}
+				else
+				{
+					<TableRow>
+						<TableRowCell colspan="6">No data available.</TableRowCell>
+					</TableRow>
+				}
+			</TableBody>
+		</Table>
+	</div>
+
+
+
+	<div>
+		<!-- Form for editing book details -->
+		<EditForm Model="@book">
+			<br />
+			<div class="col">
+				<label for="validationDefault04">Book ISBN:</label>
+				<!-- ISBN input field, disabled when no row is selected -->
+				<input type="text" class="form-control form-control-sm" id="isbn" name="isbn" @bind="@book.Isbn" disabled="@isRowSelected">
+			</div>
+			<div class="col">
+				<label for="validationDefault05">Title:</label>
+				<input type="text" class="form-control form-control-sm" id="title" name="title" @bind="@book.Name">
+			</div>
+			<div class="col">
+				<label for="validationDefault05">Genre:</label>
+				<input type="text" class="form-control form-control-sm" id="genre" name="genre" @bind="@book.Genre">
+			</div>
+			<div class="col">
+				<label for="validationDefault05">Author:</label>
+				<input type="text" class="form-control form-control-sm" id="author" name="author" @bind="@book.Author">
+			</div>
+			<div class="col">
+				<label for="validationDefault05">Availability:</label>
+				<!-- Dropdown for book availability -->
+				<Select @bind-SelectedValue="@book.Availability" class="custom-select">
+					<SelectItem Value="true">Available</SelectItem>
+					<SelectItem Value="false">Unavailable</SelectItem>
+				</Select>
+
+			</div>
+
+			<div class="col">
+				<label for="validationDefault05">Quantity:</label>
+				<input type="text" class="form-control form-control-sm" id="quantity" name="quantity" @bind="@book.Quantity">
+			</div>
+			<div class="row-button">
+				<!-- Buttons for book actions -->
+				<div class="col-button">
+					<br />
+					<button type="button" class="btn btn-primary btn-lg btn-block" @onclick="AddNewBook" disabled="@isRowSelected">ADD</button>
+				</div>
+				<div class="col-button">
+					<br />
+					<button type="button" class="btn btn-primary btn-lg btn-block" @onclick="UpdateBook">UPDATE</button>
+				</div>
+				<div class="col-button">
+					<br />
+					<button type="button" class="btn btn-primary btn-lg btn-block" @onclick="DeleteBook">DELETE</button>
+				</div>
+				<div class="col-button">
+					<br />
+					<button type="button" class="btn btn-primary btn-lg btn-block" @onclick="ClearForm">CLEAR</button>
+				</div>
+			</div>
+
+		</EditForm>
+
+		<h4>Deleted Books</h4>
+
+		<div class="deleted-book-table">
+			<Table>
+				<TableHeader>
+					<TableRow>
+						<TableHeaderCell>ISBN</TableHeaderCell>
+						<TableHeaderCell>Title</TableHeaderCell>
+						<TableHeaderCell>Author</TableHeaderCell>
+						<TableHeaderCell>Genre</TableHeaderCell>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					@if (deletedBooks != null && deletedBooks.Count > 0)
+					{
+						@foreach (var deletedBook in deletedBooks)
+						{
+							<TableRow>
+								<TableRowCell>@deletedBook.Isbn</TableRowCell>
+								<TableRowCell>@deletedBook.Name</TableRowCell>
+								<TableRowCell>@deletedBook.Author</TableRowCell>
+								<TableRowCell>@deletedBook.Genre</TableRowCell>
+							</TableRow>
+						}
+					}
+					else
+					{
+						<TableRow>
+							<TableRowCell colspan="3">No deleted books.</TableRowCell>
+						</TableRow>
+					}
+				</TableBody>
+			</Table>
+		</div>
+
+	</div>
+
+	
+}
+
+
+
+
+
+@code {
+    private bool isCodeVerified = false;
+    private bool isCodeIncorrect = false;
+    private string enteredCode = string.Empty;
+    private const string correctCode = "3812";
+
+    /*
+    Name: Verify Code
+    Description: This function verifies if the entered code matches the correct code.
+             If the codes match, it sets isCodeVerified to true and isCodeIncorrect to false.
+             If the codes do not match, it sets isCodeIncorrect to true.
+    */
+    private void VerifyCode()
+    {
+        if (enteredCode == correctCode)
+        {
+            isCodeVerified = true;
+            isCodeIncorrect = false;
+        }
+        else
+        {
+            isCodeIncorrect = true;
+        }
+    }
+
+
+
+	public Book book = new Book();
+	private bool isRowSelected = false;
+
+	public List<Book> bookList = new List<Book>();
+
+	//Loads the list of books when the component initializes
+	protected override async Task OnInitializedAsync()
+	{
+		bookList = await LoadBook();
+	}
+
+	//Reloads the list of books from the database
+	public async Task ReloadBooks()
+	{
+		bookList = await LoadBook();
+	}
+
+	//Sets the current book object with the details of the selected book from the table
+	//Updates the form fields with the selected book's details and marks the row as selected
+	private void SelectedBook(Book selectedBook)
+	{
+		//Set the selected book for editing
+		book = new Book
+			{
+				Isbn = selectedBook.Isbn,
+				Name = selectedBook.Name,
+				Author = selectedBook.Author,
+				Genre = selectedBook.Genre,
+				Availability = selectedBook.Availability,
+				Quantity = selectedBook.Quantity
+			};
+
+		isRowSelected = true;
+	}
+
+
+	//Checks if the given book is currently selected for editing
+	private bool IsSelected(Book b)
+	{
+		if (b == null)
+		{
+			return false;
+		}
+
+		return b.Isbn == book.Isbn;
+	}
+
+
+	//Clears the form fields and resets the book selection
+	private void ClearForm()
+	{
+		book = new Book();
+		isRowSelected = false;
+	}
+
+
+	//Method to load book from database
+	public async Task<List<Book>> LoadBook()
+	{
+		var books = new List<Book>();
+		string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+		SqlConnection connection = new SqlConnection(connectionString);
+
+		connection.Open();
+		SqlCommand command = new SqlCommand("SELECT isbn, book_name, author_name, genre, availability, quantity from Library_books", connection);
+
+		SqlDataReader reader = await command.ExecuteReaderAsync();
+
+		while (await reader.ReadAsync())
+		{
+			books.Add(new Book
+				(
+					reader.GetString(0),
+					reader.GetString(1),
+					reader.GetString(2),
+					reader.GetString(3),
+					reader.GetBoolean(4),
+					reader.GetInt32(5)
+				));
+		}
+
+		return books;
+	}
+
+
+
+	//Validates the form inputs for book details
+	//Throws a FormValidationException if any required fields are missing or invalid
+	private void ValidateForm()
+	{
+		if (string.IsNullOrEmpty(book.Isbn) ||
+			string.IsNullOrEmpty(book.Name) ||
+			string.IsNullOrEmpty(book.Genre) ||
+			string.IsNullOrEmpty(book.Author) ||
+			book.Quantity <= 0)
+		{
+			throw new FormValidationException("Please enter missing or empty field(s).");
+		}
+	}
+
+	//Ensures that a book is selected for editing or deleting
+	//Throws a NoBookSelectedException if no book is selected
+	private void ValidateSelection()
+	{
+		if (string.IsNullOrEmpty(book.Isbn))
+		{
+			throw new NoBookSelectedException("Please select a book.");
+		}
+	}
+
+
+	//Adds a new book to the database
+	//Performs validation, checks for existing ISBN, and displays success or error messages based on the result
+	public async void AddNewBook()
+	{
+		try
+		{
+			ValidateForm();
+
+			string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+			SqlConnection connection = new SqlConnection(connectionString);
+			connection.Open();
+
+			//Check if the isbn already exists
+			string query = "select count(1) from Library_books where isbn = @Isbn";
+			SqlCommand command = new SqlCommand(query, connection);
+			command.Parameters.AddWithValue("@Isbn", book.Isbn);
+			int result = (int)await command.ExecuteScalarAsync();
+
+			if (result > 0)
+			{
+				await Application.Current.MainPage.DisplayAlert("Error", "The ISBN already exists.", "OK");
+			}
+			else
+			{
+				SqlCommand cmd = new SqlCommand("insert into Library_books values (@Isbn, @Name, @Author, @Genre, @Availability, @Quantity)", connection);
+
+				cmd.Parameters.AddWithValue("@Isbn", book.Isbn);
+				cmd.Parameters.AddWithValue("@Name", book.Name);
+				cmd.Parameters.AddWithValue("@Author", book.Author);
+				cmd.Parameters.AddWithValue("@Genre", book.Genre);
+				cmd.Parameters.AddWithValue("@Availability", book.Availability);
+				cmd.Parameters.AddWithValue("@Quantity", book.Quantity);
+
+				cmd.ExecuteNonQuery();
+				await Application.Current.MainPage.DisplayAlert("Success", "Books Added Successfully", "OK");
+
+				ClearForm(); // Clear the form after deleting the book
+				await ReloadBooks(); // Reload the book list
+				StateHasChanged(); // Notify UI to re-render
+			}
+
+		}
+		catch (FormValidationException e)
+		{
+			await Application.Current.MainPage.DisplayAlert("Error", e.Message, "OK");
+		}
+		catch (Exception e)
+		{
+			await Application.Current.MainPage.DisplayAlert("Error", "An error occurred while adding the book.", "OK");
+		}
+
+	}
+
+
+	//Updates the details of an existing book in the database
+	//Performs validation and displays success or error messages based on the result
+	private async void UpdateBook()
+	{
+		try
+		{
+			ValidateSelection();
+			try
+			{
+				ValidateForm();
+				string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+
+				SqlConnection connection = new SqlConnection(connectionString);
+				connection.Open();
+
+				string query = @"UPDATE Library_books SET book_name = @Name, author_name = @Author, genre = @Genre, availability = @Availability, quantity = @Quantity WHERE isbn = @Isbn";
+
+				SqlCommand cmd = new SqlCommand(query, connection);
+
+				cmd.Parameters.AddWithValue("@Name", book.Name);
+				cmd.Parameters.AddWithValue("@Author", book.Author);
+				cmd.Parameters.AddWithValue("@Genre", book.Genre);
+				cmd.Parameters.AddWithValue("@Availability", book.Availability);
+				cmd.Parameters.AddWithValue("@Quantity", book.Quantity);
+				cmd.Parameters.AddWithValue("@Isbn", book.Isbn);
+
+				cmd.ExecuteNonQuery();
+
+				await Application.Current.MainPage.DisplayAlert("Success", "Book Updated Successfully", "OK");
+
+				ClearForm();
+				await ReloadBooks();
+				StateHasChanged();
+			}
+			catch (FormValidationException e)
+			{
+				await Application.Current.MainPage.DisplayAlert("Error", e.Message, "OK");
+			}
+			catch (Exception e)
+			{
+				await Application.Current.MainPage.DisplayAlert("Error", "An error occurred while adding the book.", "OK");
+			}
+
+
+		}
+		catch (NoBookSelectedException e)
+		{
+			await Application.Current.MainPage.DisplayAlert("Error", e.Message, "OK");
+		}
+	}
+
+	//Deletes a selected book from the database
+	//Performs validation and displays success or error messages based on the result
+	public List<DeletedBook> deletedBooks = new List<DeletedBook>();
+	public async void DeleteBook()
+	{
+		try
+		{
+			ValidateSelection();
+
+			deletedBooks.Add(new DeletedBook(book.Isbn, book.Name, book.Author, book.Genre));
+
+			string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+			SqlConnection connection = new SqlConnection(connectionString);
+			connection.Open();
+
+			SqlCommand cmd = new SqlCommand("delete from Library_books where isbn = @Isbn", connection);
+
+			cmd.Parameters.AddWithValue("@Isbn", book.Isbn);
+
+			cmd.ExecuteNonQuery();
+
+			await Application.Current.MainPage.DisplayAlert("Success", "Book Deleted Successfully", "OK");
+
+			ClearForm();
+			await ReloadBooks();
+			StateHasChanged();
+		}
+		catch (NoBookSelectedException e)
+		{
+			await Application.Current.MainPage.DisplayAlert("Error", e.Message, "OK");
+		}
+	}
+}
