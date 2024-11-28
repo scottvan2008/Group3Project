@@ -161,7 +161,7 @@
     public async void SearchBooks()
     {
         //connect the database and search books by book name
-        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        string connectBooks = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
         SqlConnection connect = new SqlConnection(connectBooks);
         connect.Open();
         SqlCommand cmd = new SqlCommand();
@@ -169,11 +169,11 @@
         {
             if(UserInputBookName == "")
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book", connect);
             }
             else
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where book_name like @BookName", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book where book_name like @BookName", connect);
                 cmd.Parameters.AddWithValue("@BookName", "%" + UserInputBookName + "%");
             }
 
@@ -184,11 +184,11 @@
         {
             if (UserInputAuthorName == "")
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book", connect);
             }
             else
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where author_name like @AuthorName", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book where author_name like @AuthorName", connect);
                 cmd.Parameters.AddWithValue("@AuthorName", "%" + UserInputAuthorName + "%");
             }
 
@@ -198,11 +198,11 @@
         {
             if(UserInputGenre == "ALL")
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book", connect);
             }
             else
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where genre like @Genre", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book where genre like @Genre", connect);
                 cmd.Parameters.AddWithValue("@Genre", "%" + UserInputGenre + "%");
             }
 
@@ -212,11 +212,11 @@
         {
             if (UserInputISBN == "")
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book", connect);
             }
             else
             {
-                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from Library_books where isbn like @ISBN", connect);
+                cmd = new SqlCommand("select isbn,book_name,author_name,genre,availability,quantity from book where isbn like @ISBN", connect);
                 cmd.Parameters.AddWithValue("@ISBN", "%" + UserInputISBN + "%");
             }
             
@@ -248,17 +248,17 @@
     //return one book to the database and show successful message
     public async void ReturnBook(Book b)
     {
-        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        string connectBooks = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
         SqlConnection connect = new SqlConnection(connectBooks);
         connect.Open();
-        SqlCommand cmd = new SqlCommand("update Library_books set quantity=quantity+1 where isbn = @ISBN", connect);
+        SqlCommand cmd = new SqlCommand("update book set quantity=quantity+1 where isbn = @ISBN", connect);
         cmd.Parameters.AddWithValue("@ISBN", b.Isbn);
         cmd.ExecuteNonQuery();
         if(b.Quantity == 0)
         {
             // if it is unavailable befor, it should be available now after 1 book returned
 
-            SqlCommand cmd2 = new SqlCommand("update Library_books set availability=1 where isbn = @ISBN", connect);
+            SqlCommand cmd2 = new SqlCommand("update book set availability=1 where isbn = @ISBN", connect);
             cmd2.Parameters.AddWithValue("@ISBN", b.Isbn);
             cmd2.ExecuteNonQuery();
             b.Availability = true;
@@ -280,17 +280,17 @@
         }
         else
         {
-            string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+            string connectBooks = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
             SqlConnection connect = new SqlConnection(connectBooks);
             connect.Open();
-            SqlCommand cmd = new SqlCommand("update Library_books set quantity=quantity-1 where isbn = @ISBN", connect);
+            SqlCommand cmd = new SqlCommand("update book set quantity=quantity-1 where isbn = @ISBN", connect);
             cmd.Parameters.AddWithValue("@ISBN", b.Isbn);
             cmd.ExecuteNonQuery();
 
             //if there is only one book left in stock, change the availability in database after quantity changed
             if (b.Quantity == 1)
             {
-                SqlCommand cmd2 = new SqlCommand("update Library_books set availability=0 where isbn = @ISBN", connect);
+                SqlCommand cmd2 = new SqlCommand("update book set availability=0 where isbn = @ISBN", connect);
                 cmd2.Parameters.AddWithValue("@ISBN", b.Isbn);
                 cmd2.ExecuteNonQuery();
                 b.Availability = false;
@@ -353,10 +353,10 @@
     // read every distinct genre
     public static List<string> getGenre()
     {
-        string connectBooks = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        string connectBooks = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
         SqlConnection connect = new SqlConnection(connectBooks);
         connect.Open();
-        SqlCommand cmd = new SqlCommand("select distinct genre from Library_books", connect);
+        SqlCommand cmd = new SqlCommand("select distinct genre from book", connect);
         List<string> genresList = new List<string>();
         SqlDataReader reader = cmd.ExecuteReader();
 

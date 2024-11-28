@@ -1,6 +1,8 @@
 ﻿@page "/explore"
 @* @using library.Data *@
 @using Microsoft.Data.SqlClient
+@* @using System.Data.SqlClient; *@
+
 
 
 
@@ -66,13 +68,15 @@
     */
     private async Task LoadBooks()
     {
-        string connectBook = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        // string connectBook = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+        string connectBook = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
         try
         {
             using (SqlConnection connect = new SqlConnection(connectBook))
             {
                 await connect.OpenAsync();
-                SqlCommand cmd = new SqlCommand("SELECT * FROM Library_books", connect);
+                //connect.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * FROM book", connect);
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
 
                 while (await reader.ReadAsync())

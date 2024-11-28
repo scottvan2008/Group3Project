@@ -181,7 +181,7 @@ else
     private bool isCodeVerified = false;
     private bool isCodeIncorrect = false;
     private string enteredCode = string.Empty;
-    private const string correctCode = "3812";
+    private const string correctCode = "0000";
 
     /*
     Name: Verify Code
@@ -264,11 +264,11 @@ else
 	public async Task<List<Book>> LoadBook()
 	{
 		var books = new List<Book>();
-		string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+		string connectionString = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
 		SqlConnection connection = new SqlConnection(connectionString);
 
 		connection.Open();
-		SqlCommand command = new SqlCommand("SELECT isbn, book_name, author_name, genre, availability, quantity from Library_books", connection);
+		SqlCommand command = new SqlCommand("SELECT isbn, book_name, author_name, genre, availability, quantity from book", connection);
 
 		SqlDataReader reader = await command.ExecuteReaderAsync();
 
@@ -323,12 +323,12 @@ else
 		{
 			ValidateForm();
 
-			string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+			string connectionString = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
 			SqlConnection connection = new SqlConnection(connectionString);
 			connection.Open();
 
 			//Check if the isbn already exists
-			string query = "select count(1) from Library_books where isbn = @Isbn";
+			string query = "select count(1) from book where isbn = @Isbn";
 			SqlCommand command = new SqlCommand(query, connection);
 			command.Parameters.AddWithValue("@Isbn", book.Isbn);
 			int result = (int)await command.ExecuteScalarAsync();
@@ -339,7 +339,7 @@ else
 			}
 			else
 			{
-				SqlCommand cmd = new SqlCommand("insert into Library_books values (@Isbn, @Name, @Author, @Genre, @Availability, @Quantity)", connection);
+				SqlCommand cmd = new SqlCommand("insert into book values (@Isbn, @Name, @Author, @Genre, @Availability, @Quantity)", connection);
 
 				cmd.Parameters.AddWithValue("@Isbn", book.Isbn);
 				cmd.Parameters.AddWithValue("@Name", book.Name);
@@ -379,12 +379,12 @@ else
 			try
 			{
 				ValidateForm();
-				string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+				string connectionString = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
 
 				SqlConnection connection = new SqlConnection(connectionString);
 				connection.Open();
 
-				string query = @"UPDATE Library_books SET book_name = @Name, author_name = @Author, genre = @Genre, availability = @Availability, quantity = @Quantity WHERE isbn = @Isbn";
+				string query = @"UPDATE book SET book_name = @Name, author_name = @Author, genre = @Genre, availability = @Availability, quantity = @Quantity WHERE isbn = @Isbn";
 
 				SqlCommand cmd = new SqlCommand(query, connection);
 
@@ -431,11 +431,11 @@ else
 
 			deletedBooks.Add(new DeletedBook(book.Isbn, book.Name, book.Author, book.Genre));
 
-			string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Sample;Integrated Security=True";
+			string connectionString = "Data Source=PC-202312110631\\SQLEXPRESS;Initial Catalog=Library;Integrated Security=True;Trust Server Certificate=True";
 			SqlConnection connection = new SqlConnection(connectionString);
 			connection.Open();
 
-			SqlCommand cmd = new SqlCommand("delete from Library_books where isbn = @Isbn", connection);
+			SqlCommand cmd = new SqlCommand("delete from book where isbn = @Isbn", connection);
 
 			cmd.Parameters.AddWithValue("@Isbn", book.Isbn);
 
